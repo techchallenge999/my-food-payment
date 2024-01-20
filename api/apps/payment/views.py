@@ -2,13 +2,13 @@ import os
 import uuid
 
 from rest_framework import status
-from rest_framework.generics import CreateAPIView, ListAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView, UpdateAPIView
 from rest_framework.response import Response
 
 from api.gateways.mock_checkout import PaymentGateway
 from api.gateways.checkout_interface import PaymentGatewayInputDto
 from api.apps.payment.models import Payment
-from api.apps.payment.serializers import CreatePaymentSerializer, ListPaymentSerializer
+from api.apps.payment.serializers import CreatePaymentSerializer, ListPaymentSerializer, UpdatePaymentSerializer
 
 
 class CreatePayment(CreateAPIView):
@@ -21,7 +21,7 @@ class CreatePayment(CreateAPIView):
         qr_data = PaymentGateway().create(
             PaymentGatewayInputDto(
                 uuid=new_payment_uuid,
-                notification_url=f"{webhook_base_url}/webhook/{new_payment_uuid}",
+                notification_url=f"{webhook_base_url}/update/{new_payment_uuid}",
                 total_amount=request.data.get('value'),
             )
         ).qr_data
@@ -45,3 +45,16 @@ class CreatePayment(CreateAPIView):
 class ListPayment(ListAPIView):
     serializer_class = ListPaymentSerializer
     queryset = Payment.objects.all()
+
+
+class UpdatePayment(UpdateAPIView):
+    serializer_class = UpdatePaymentSerializer
+    queryset = Payment.objects.all()
+    lookup_field = 'uuid'
+
+    def put(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -23,3 +23,9 @@ class ListPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = "__all__"
+
+
+class UpdatePaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ["status"]
